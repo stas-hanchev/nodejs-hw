@@ -2,6 +2,7 @@ import express from 'express';
 import 'dotenv/config';
 
 import cors from 'cors';
+import { errors } from 'celebrate';
 
 import { connectMongoDB } from './db/connectMongoDB.js';
 
@@ -18,13 +19,14 @@ app.use(express.json());
 app.use(cors());
 app.use(logger);
 
-app.get('/', (req, res) => {
-  res.status(200).json({ message: 'Hello world!' });
-});
+// app.get('/', (req, res) => {
+//   res.status(200).json({ message: 'Hello world!' });
+// });
 
 app.use(notesRouter);
 
 app.use(notFoundHandler);
+app.use(errors());
 app.use(errorHandler);
 
 await connectMongoDB();
