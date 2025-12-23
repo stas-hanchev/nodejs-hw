@@ -46,10 +46,22 @@ export const getNoteById = async (req, res) => {
   res.status(200).json(note);
 };
 
+// export const createNote = async (req, res) => {
+//   const note = await Note({ ...req.body, userId: req.user._id });
+//   res.status(201).json(note);
+// };
+
 export const createNote = async (req, res) => {
-  const note = await Note({ ...req.body, userId: req.user._id });
-  res.status(201).json(note);
+  try {
+    const note = new Note({ ...req.body, userId: req.user._id });
+    await note.save();
+    res.status(201).json(note);
+  } catch (error) {
+    console.error('Error creating note:', error);
+    res.status(500).json({ message: 'Error creating note' });
+  }
 };
+
 
 export const deleteNote = async (req, res) => {
   const { noteId } = req.params;
