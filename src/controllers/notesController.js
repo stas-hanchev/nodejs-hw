@@ -1,0 +1,94 @@
+import createHttpError from 'http-errors';
+import { Note } from "../models/note.js";
+
+export const getAllNotes = async (req, res) => {
+  const { page = 1, perPage = 10, tag, search } = req.query;
+  const skip = (page - 1) * perPage;
+
+  const notesQuery = Note.find({ userId: req.user._id });
+
+  if (search) {
+    notesQuery.where({ $text: { $search: search } });
+  }
+
+  if (tag) {
+    notesQuery.where("tag").equals(tag);
+  }
+
+  const [totalItems, notes] = await Promise.all([
+    notesQuery.clone().countDocuments(),
+    notesQuery.skip(skip).limit(perPage),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / perPage);
+
+  res.status(200).json({
+    page,
+    perPage,
+    totalItems,
+    totalPages,
+    notes,
+  });
+};
+
+export const getNoteById = async (req, res) => {
+  const { noteId } = req.params;
+
+  const note = await Note.findOne({
+    _id: noteId,
+    userId: req.user._id,
+  });
+
+  if (!note) {
+    throw createHttpError(404, 'Note not found');
+  }
+
+  res.status(200).json(note);
+};
+
+// export const createNote = async (req, res) => {
+//   const note = await Note({ ...req.body, userId: req.user._id });
+//   res.status(201).json(note);
+// };
+
+export const createNote = async (req, res) => {
+  try {
+    const note = new Note({ ...req.body, userId: req.user._id });
+    await note.save();
+    res.status(201).json(note);
+  } catch (error) {
+    console.error('Error creating note:', error);
+    res.status(500).json({ message: 'Error creating note' });
+  }
+};
+
+
+export const deleteNote = async (req, res) => {
+  const { noteId } = req.params;
+  const note = await Note.findOneAndDelete({
+    _id: noteId,
+    userId: req.user._id,
+  });
+
+  if (!note) {
+    throw createHttpError(404, "Note not found");
+  }
+
+  res.status(200).json(note);
+};
+
+export const updateNote = async (req, res) => {
+  const { noteId } = req.params;
+
+  const note = await Note.findOneAndUpdate(
+    { _id: noteId, userId: req.user._id }, // Шукаємо по id
+    req.body,
+    { new: true }, // повертаємо оновлений документ
+  );
+
+  if (!note) {
+    throw createHttpError(404, 'Note not found');
+  }
+
+  res.status(200).json(note);
+};
